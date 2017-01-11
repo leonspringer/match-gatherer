@@ -17,22 +17,47 @@ if url == "http://www.fullmatchesandshows.com" or url == "http://www.fullmatches
     # Main page links
     urls = []
     data_configs = []
+    #Get links on first page
     for module in soup.find_all(class_="td-module-thumb"):
         url = module.find('a')
         urls.append(url.attrs['href'])
     for url in urls:
+        sub_urls = []
         print ('[+] Checking: {0}'.format(url)) 
         page = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.103 Safari/537.36"})
         sub_soup = BeautifulSoup(page.content)
+        # Get first content on link on first page (typically a highlight)
         for post_content in sub_soup.find_all("div", class_="td-post-content"):
             data_configs.append(post_content.find_all("script")[1])
+        # Look through MOTD, 1st Half, 2nd Half, etc...
+        for item in sub_soup.find_all(lambda tag: tag.name == 'li' and tag.get('class') == ['button_style']):
+            sub_url = item.find("a")
+            sub_urls.append(sub_url.attrs['href'])
+        for sub_url in sub_urls:
+            print ('[+] Getting additional content: {0}'.format(sub_url)) 
+            page = requests.get(sub_url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.103 Safari/537.36"})
+            sub_soup = BeautifulSoup(page.content)
+            for post_content in sub_soup.find_all("div", class_="td-post-content"):
+                data_configs.append(post_content.find_all("script")[1])
 
 else:
     # Individual link
+    sub_urls = []
     data_configs = []
+    # Get first content on link on first page (typically a highlight)
     for post_content in soup.find_all("div", class_="td-post-content"):
         data_configs.append(post_content.find_all("script")[1])
         print ('[+] Checking: {0}'.format(url))
+    # Look through MOTD, 1st Half, 2nd Half, etc...
+    for item in soup.find_all(lambda tag: tag.name == 'li' and tag.get('class') == ['button_style']):
+        sub_url = item.find("a")
+        sub_urls.append(sub_url.attrs['href'])
+    for sub_url in sub_urls:
+        print ('[+] Checking: {0}'.format(sub_url)) 
+        page = requests.get(sub_url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.103 Safari/537.36"})
+        sub_soup = BeautifulSoup(page.content)
+        for post_content in sub_soup.find_all("div", class_="td-post-content"):
+            data_configs.append(post_content.find_all("script")[1])
 
 
 def get_links():
@@ -41,15 +66,12 @@ def get_links():
     for data_config in data_configs:
         if "zeus.json" in str(data_config):
             #print data_config
-
             reg = "\/\/((\w+\.*\w+\.\w+)\/(\d+)\/(\w+)\/(\w\d)\/(\d+)\/(\w+\.\w+))"
             data_config = re.findall(reg, str(data_config))
             json_build_url = "https://" + data_config[0][0]
             json_urls.append(json_build_url)
             video_build_url = 'https://cdn.video.playwire.com/' + data_config[0][2] + '/' + data_config[0][3] + '/' + data_config[0][5] + '/video-sd.mp4'
             video_urls.append(video_build_url)
-        else:
-            print  "nope"
     return json_urls, video_urls
 
 def print_json_object(json_content):
@@ -80,27 +102,14 @@ def parse_remote_json(urls):
 json_urls, video_urls = get_links()
 json_content = parse_remote_json(json_urls)
 video_title = print_json_object(json_content)
-print video_title
-print video_urls
+for v_url, v_title in zip(video_urls, video_title):
+    print v_title
+    print v_url
+    print "--------------"
+            
 
 
 
 
 
-# # html/body/div[6]/div[2]/div/div[2]/div[1]/div/article/div[2]/div[5]/script
 
-# url = "http://www.fullmatchesandshows.com/2017/01/05/athletic-bilbao-vs-barcelona-highlights/"
-# # headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.103 Safari/537.36"}
-# page = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.103 Safari/537.36"})
-# tree = html.fromstring(page.content)
-
-
-# soup = BeautifulSoup(page)
-
-# html.tostring(tree)
-# acp_content = tree.xpath('//*[@id="zeus_1483728924478"]')
-# data_config = tree.xpath('//*[@id="acp_content"]/script')
-
-
-
-# print 'Buyers: ', data_config
