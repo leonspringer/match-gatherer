@@ -5,6 +5,7 @@ import urllib
 import requests
 import json
 import re
+import datetime
 
 
 video_title = []
@@ -103,14 +104,18 @@ def parse_remote_json(urls):
         return json_content
 
 def run(url):
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     data_configs = get_links(url)
     json_urls, video_urls = build_urls(data_configs)
     json_content = parse_remote_json(json_urls)
     video_title = print_json_object(json_content)
+    html_file = open('matchlinks.htm',"a+")
     for v_url, v_title in zip(video_urls, video_title):
         print v_title
         print v_url
         print "--------------"
+        html_file.write('{0}   -   <a href ="{1}">{2}</a><br/>\n'.format(now, v_url, v_title))
+    html_file.close()
             
 def parse_args():
     parser = argparse.ArgumentParser()
